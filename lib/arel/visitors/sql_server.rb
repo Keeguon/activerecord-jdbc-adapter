@@ -118,7 +118,7 @@ module Arel
           ].join(' ')
         end
 
-        Arel::Collector::SQLString.new(sql)
+        Arel::Collectors::SQLString.new(sql)
       end
 
       def visit_Arel_Nodes_SelectStatementWithOutOffset o, collector, windowed = false
@@ -141,7 +141,7 @@ module Arel
         elsif top_one_everything_for_through_join?(o, collector)
           projections = projections.map { |x| projection_without_expression(x, collector) }
         end
-        Arel::Collector::SQLString.new([
+        Arel::Collectors::SQLString.new([
           ('SELECT' unless windowed),
           (visit(core.set_quantifier, collector) if core.set_quantifier && !windowed),
           (visit(o.limit, collector) if o.limit && !windowed),
@@ -161,7 +161,7 @@ module Arel
         core = o.cores.first
         o.limit ||= Arel::Nodes::Limit.new(9_223_372_036_854_775_807)
         orders = rowtable_orders(o)
-        Arel::Collector::SQLString.new([
+        Arel::Collectors::SQLString.new([
           'SELECT',
           (visit(o.limit, collector) if o.limit && !windowed_single_distinct_select_statement?(o)),
           (rowtable_projections o, collector.map { |x| visit(x, collector) }.join(', ')),
@@ -178,7 +178,7 @@ module Arel
         core = o.cores.first
         o.limit.expr = Arel.sql("#{o.limit.expr} + #{o.offset ? o.offset.expr : 0}") if o.limit
         orders = rowtable_orders(o)
-        Arel::Collector::SQLString.new([
+        Arel::Collectors::SQLString.new([
           'SELECT COUNT([count]) AS [count_id]',
           'FROM (',
           'SELECT',
