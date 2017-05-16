@@ -118,7 +118,7 @@ module Arel
           ].join(' ')
         end
 
-        sql
+        Arel::Collector::SQLString.new(sql)
       end
 
       def visit_Arel_Nodes_SelectStatementWithOutOffset o, collector, windowed = false
@@ -141,7 +141,7 @@ module Arel
         elsif top_one_everything_for_through_join?(o, collector)
           projections = projections.map { |x| projection_without_expression(x, collector) }
         end
-        [
+        Arel::Collector::SQLString.new([
           ('SELECT' unless windowed),
           (visit(core.set_quantifier, collector) if core.set_quantifier && !windowed),
           (visit(o.limit, collector) if o.limit && !windowed),
@@ -154,14 +154,14 @@ module Arel
           ("GROUP BY #{groups.map { |x| visit(x, collector) }.join ', ' }" unless groups.empty?),
           (visit(core.having, collector) if core.having),
           ("ORDER BY #{orders.map { |x| visit(x, collector) }.join(', ')}" if !orders.empty? && !windowed)
-        ].compact.join ' '
+        ].compact.join(' '))
       end
 
       def visit_Arel_Nodes_SelectStatementWithOffset o, collector
         core = o.cores.first
         o.limit ||= Arel::Nodes::Limit.new(9_223_372_036_854_775_807)
         orders = rowtable_orders(o)
-        [
+        Arel::Collector::SQLString.new([
           'SELECT',
           (visit(o.limit, collector) if o.limit && !windowed_single_distinct_select_statement?(o)),
           (rowtable_projections o, collector.map { |x| visit(x, collector) }.join(', ')),
@@ -171,14 +171,14 @@ module Arel
           ') AS [__rnt]',
           (visit(o.offset, collector) if o.offset),
           'ORDER BY [__rnt].[__rn] ASC'
-        ].compact.join ' '
+        ].compact.join(' '))
       end
 
       def visit_Arel_Nodes_SelectStatementForComplexCount o, collector
         core = o.cores.first
         o.limit.expr = Arel.sql("#{o.limit.expr} + #{o.offset ? o.offset.expr : 0}") if o.limit
         orders = rowtable_orders(o)
-        [
+        Arel::Collector::SQLString.new([
           'SELECT COUNT([count]) AS [count_id]',
           'FROM (',
           'SELECT',
@@ -192,7 +192,7 @@ module Arel
           ("ORDER BY #{o.orders.map { |x| visit(x, collector) }.join(', ')}" unless o.orders.empty?),
           ') AS [__rnt]',
           (visit(o.offset, collector) if o.offset)
-        ].compact.join ' '
+        ].compact.join(' '))
       end
 
       # SQLServer ToSql/Visitor (Additions)
