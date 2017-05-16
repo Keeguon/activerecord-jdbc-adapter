@@ -103,6 +103,7 @@ module ArJdbc
 
     # @see ActiveRecord::ConnectionAdapters::Jdbc::ArelSupport
     def self.arel_visitor_type(config)
+      require 'arel/visitors/sql_server'
       ::Arel::Visitors::SQLServer
     end
 
