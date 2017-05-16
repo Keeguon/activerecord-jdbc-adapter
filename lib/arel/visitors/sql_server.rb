@@ -20,7 +20,7 @@ module Arel
         ""
       end
 
-      def visit_Arel_Visitors_MSSQL_RowNumber o, collector
+      def visit_Arel_Visitors_SQLServer_RowNumber o, collector
         collector << "ROW_NUMBER() OVER (ORDER BY "
         inject_join(o.children, collector, ', ') << ") as _row_num"
       end
