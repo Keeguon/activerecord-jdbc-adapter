@@ -3,20 +3,14 @@ require 'arel/visitors/compat'
 module Arel
   module Visitors
     class SQLServer < Arel::Visitors::ToSql
-
       RowNumber = Struct.new :children
-
-      def initialize(*)
-        @primary_keys = {}
-        super
-      end
 
       private
 
       # `top` wouldn't really work here. I.e. User.select("distinct first_name").limit(10) would generate
       # "select top 10 distinct first_name from users", which is invalid query! it should be
       # "select distinct top 10 first_name from users"
-      def visit_Arel_Nodes_Top o, collector
+      def visit_Arel_Nodes_Top o
         ""
       end
 
@@ -69,23 +63,6 @@ module Arel
         end
       end
 
-      def visit_Arel_Nodes_DeleteStatement o, collector
-        collector << 'DELETE '
-        if o.limit
-          collector << 'TOP ('
-          visit o.limit.expr, collector
-          collector << ') '
-        end
-        collector << 'FROM '
-        collector = visit o.relation, collector
-        if o.wheres.any?
-          collector << ' WHERE '
-          inject_join o.wheres, collector, AND
-        else
-          collector
-        end
-      end
-
       def determine_order_by orders, x
         if orders.any?
           orders
@@ -106,22 +83,11 @@ module Arel
       end
 
       # FIXME raise exception of there is no pk?
+      # FIXME!! Table.primary_key will be deprecated. What is the replacement??
       def find_left_table_pk o
-        if o.kind_of?(Arel::Nodes::Join)
-          find_left_table_pk(o.left)
-        elsif o.instance_of?(Arel::Table)
-          find_primary_key(o)
-        end
+        return o.primary_key if o.instance_of? Arel::Table
+        find_left_table_pk o.left if o.kind_of? Arel::Nodes::Join
       end
-
-      def find_primary_key(o)
-        @primary_keys[o.name] ||= begin
-          primary_key_name = @connection.primary_key(o.name)
-          # some tables might be without primary key
-          primary_key_name && o[primary_key_name]
-        end
-end
-
     end
   end
 end
