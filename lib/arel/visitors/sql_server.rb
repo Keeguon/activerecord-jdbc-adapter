@@ -360,7 +360,7 @@ module Arel
         single_distinct_select_statement?(o) &&
           (o.limit && !o.offset) &&
           core.groups.empty? &&
-          !single_distinct_select_everything_statement? o, collector
+          !single_distinct_select_everything_statement?(o, collector)
       end
 
       def join_in_select_statement?(o)
