@@ -121,7 +121,7 @@ module Arel
         sql
       end
 
-      def visit_Arel_Nodes_SelectStatementWithOutOffset(o, a, windowed = false)
+      def visit_Arel_Nodes_SelectStatementWithOutOffset o, collector, windowed = false
         find_and_fix_uncorrelated_joins_in_select_statement(o)
         core = o.cores.first
         projections = core.projections
@@ -138,7 +138,7 @@ module Arel
             expr = Arel.sql projection_without_expression(x.expr, collector)
             x.descending? ? Arel::Nodes::Max.new([expr]) : Arel::Nodes::Min.new([expr])
           end
-        elsif top_one_everything_for_through_join? o, collector
+        elsif top_one_everything_for_through_join?(o, collector)
           projections = projections.map { |x| projection_without_expression(x, collector) }
         end
         [
@@ -167,7 +167,7 @@ module Arel
           (rowtable_projections o, collector.map { |x| visit(x, collector) }.join(', ')),
           'FROM (',
           "SELECT #{core.set_quantifier ? 'DISTINCT DENSE_RANK()' : 'ROW_NUMBER()'} OVER (ORDER BY #{orders.map { |x| visit(x, collector) }.join(', ')}) AS [__rn],",
-          visit_Arel_Nodes_SelectStatementWithOutOffset(o, a, true),
+          visit_Arel_Nodes_SelectStatementWithOutOffset(o, collector, true),
           ') AS [__rnt]',
           (visit(o.offset, collector) if o.offset),
           'ORDER BY [__rnt].[__rn] ASC'
