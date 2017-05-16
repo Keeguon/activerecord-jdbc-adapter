@@ -16,7 +16,7 @@ module Arel
       # `top` wouldn't really work here. I.e. User.select("distinct first_name").limit(10) would generate
       # "select top 10 distinct first_name from users", which is invalid query! it should be
       # "select distinct top 10 first_name from users"
-      def visit_Arel_Nodes_Top o
+      def visit_Arel_Nodes_Top o, collector
         ""
       end
 
