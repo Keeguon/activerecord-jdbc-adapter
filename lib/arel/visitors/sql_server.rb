@@ -430,7 +430,7 @@ module Arel
               p.strip!
             end
           end
-        elsif join_in_select_statement?(o) && all_projections_aliased_in_select_statement? o, collector
+        elsif join_in_select_statement?(o) && all_projections_aliased_in_select_statement?(o, collector)
           core.projections.map do |x|
             Arel.sql visit(x, collector).split(',').map { |y| y.split(' AS ').last.strip }.join(', ')
           end
