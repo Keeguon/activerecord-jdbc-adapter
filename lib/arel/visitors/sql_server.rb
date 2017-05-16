@@ -26,27 +26,27 @@ module Arel
       end
 
       def visit_Arel_Nodes_Offset o, collector
-        "WHERE [__rnt].[__rn] > (#{visit o.expr, a})"
+        "WHERE [__rnt].[__rn] > (#{visit o.expr, collector})"
       end
 
       def visit_Arel_Nodes_Limit o, collector
-        "TOP (#{visit o.expr, a})"
+        "TOP (#{visit o.expr, collector})"
       end
 
       def visit_Arel_Nodes_Lock o, collector
-        visit o.expr, a
+        visit o.expr, collector
       end
 
       def visit_Arel_Nodes_Ordering o, collector
         if o.respond_to?(:direction)
-          "#{visit o.expr, a} #{o.ascending? ? 'ASC' : 'DESC'}"
+          "#{visit o.expr, collector} #{o.ascending? ? 'ASC' : 'DESC'}"
         else
-          visit o.expr, a
+          visit o.expr, collector
         end
       end
 
       def visit_Arel_Nodes_Bin o, collector
-        "#{visit o.expr, a} #{::ArJdbc::MSSQL.cs_equality_operator}"
+        "#{visit o.expr, collector} #{::ArJdbc::MSSQL.cs_equality_operator}"
       end
 
       # SQLServer ToSql/Visitor (Additions)
