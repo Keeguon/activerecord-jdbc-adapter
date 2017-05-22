@@ -7,6 +7,15 @@ module Arel
 
       private
 
+      def visit_Arel_Nodes_Bin o, collector
+        visit o.expr, collector
+        if o.expr.val.is_a? Numeric
+          collector
+        else
+          collector << " #{::ArJdbc::MSSQL.cs_equality_operator} "
+        end
+      end
+
       # `top` wouldn't really work here. I.e. User.select("distinct first_name").limit(10) would generate
       # "select top 10 distinct first_name from users", which is invalid query! it should be
       # "select distinct top 10 first_name from users"
