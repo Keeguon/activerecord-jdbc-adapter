@@ -714,12 +714,11 @@ module ArJdbc
     # @override
     def exec_insert(sql, name = 'SQL', binds = [], pk = nil, sequence_name = nil)
       if id_insert_table_name = identity_insert_table_name(sql)
-          with_identity_insert_enabled(id_insert_table_name) do
-            super(sql, name, binds, pk, sequence_name)
-          end
-        else
+        with_identity_insert_enabled(id_insert_table_name) do
           super(sql, name, binds, pk, sequence_name)
         end
+      else
+        super(sql, name, binds, pk, sequence_name)
       end
     end
 
