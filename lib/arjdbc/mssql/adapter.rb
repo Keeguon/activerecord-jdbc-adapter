@@ -724,6 +724,12 @@ module ArJdbc
       execute "DROP INDEX #{quote_table_name(table_name)}.#{index_name(table_name, options)}"
     end
 
+    # === SQLServer Specific ======================================== #
+
+    def views
+      tables('VIEW')
+    end
+
     # @private
     SKIP_COLUMNS_TABLE_NAMES_RE = /^information_schema\./i
 
