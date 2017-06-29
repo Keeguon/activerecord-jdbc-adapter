@@ -599,19 +599,11 @@ module ArJdbc
     EMPTY_ARRAY = [].freeze
 
     def columns(table_name, name = nil, default = EMPTY_ARRAY)
-      # It's possible for table_name to be an empty string, or nil, if something
-      # attempts to issue SQL which doesn't involve a table.
-      # IE. "SELECT 1" or "SELECT * FROM someFunction()".
       return default if table_name.blank?
-
-      table_name = unquote_table_name(table_name)
-
-      return default if table_name =~ SKIP_COLUMNS_TABLE_NAMES_RE
-
-      unless columns = ( @table_columns ||= {} )[table_name]
-        @table_columns[table_name] = columns = super(table_name, name)
+      ( @table_columns ||= {} )[table_name].collect do |ci|
+        sqlserver_options = ci.except(:name,:default_value,:type,:null).merge(:database_year=>database_year)
+        jdbc_column_class.new ci[:name], ci[:default_value], ci[:type], ci[:null], sqlserver_options
       end
-      columns
     end
 
     def clear_cached_table(table_name)

@@ -9,6 +9,12 @@ module ArJdbc
     # @see ActiveRecord::ConnectionAdapters::JdbcColumn
     module Column
 
+      def initialize(name, default, sql_type = nil, null = true, sqlserver_options = {})
+        @sqlserver_options = sqlserver_options.symbolize_keys
+        super(name, default, sql_type, null)
+        @primary = @sqlserver_options[:is_identity] || @sqlserver_options[:is_primary]
+      end
+
       def self.included(base)
         # NOTE: assumes a standalone MSSQLColumn class
         class << base; include Cast; end
@@ -46,7 +52,7 @@ module ArJdbc
       def type_cast(value)
         return nil if value.nil?
         return coder.load(value) if encoded?
-        
+
         case type
         when :integer then ( value.is_a?(String) ? unquote(value) : (value || 0) ).to_i
         when :primary_key then value.respond_to?(:to_i) ? value.to_i : ((value && 1) || 0)
