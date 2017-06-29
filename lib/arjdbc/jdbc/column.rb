@@ -12,6 +12,9 @@ module ActiveRecord
     class JdbcColumn < Column
       # @deprecated attribute writers will be removed in 1.4
       attr_writer :limit, :precision # unless ArJdbc::AR42
+      attr_accessor :coder
+
+      alias :encoded? :coder
 
       def initialize(config, name, *args)
         if self.class == JdbcColumn
