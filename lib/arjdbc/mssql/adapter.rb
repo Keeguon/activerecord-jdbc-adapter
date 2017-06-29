@@ -448,6 +448,8 @@ module ArJdbc
     end
 
     ADAPTER_NAME = 'MSSQL'.freeze
+    DATABASE_VERSION_REGEXP     = /Microsoft SQL Server\s+"?(\d{4}|\w+)"?/
+    SUPPORTED_VERSIONS = [2005,2008,2010,2011,2012,2014,2016,2017]
 
     def adapter_name
       ADAPTER_NAME
@@ -965,6 +967,21 @@ module ActiveRecord::ConnectionAdapters
       super # configure_connection happens in super
 
       @schema_cache = ::ArJdbc::MSSQL::SchemaCache.new self
+      @database_version = select_value 'SELECT @@version', 'SCHEMA'
+      @database_year = begin
+                         if @database_version =~ /Azure/i
+                           @sqlserver_azure = true
+                           @database_version.match(/\s-\s([0-9.]+)/)[1]
+                           year = 2016
+                         elsif @database_version =~ /vNext/i
+                           year = 2016
+                         else
+                           year = DATABASE_VERSION_REGEXP.match(@database_version)[1]
+                           year == "Denali" ? 2011 : year.to_i
+                         end
+                       rescue
+                         0
+                       end
 
       setup_limit_offset!
     end
