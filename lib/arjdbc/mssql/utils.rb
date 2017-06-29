@@ -53,21 +53,20 @@ module ArJdbc
       end
 
       def unquote_string(string)
-        string.to_s.gsub("''", "'")
+            string.to_s.gsub(/\'\'/, "'")
       end
-
+      
       def unqualify_table_name(table_name)
-        remove_identifier_delimiters(table_name.to_s.split('.').last)
+        table_name.to_s.split('.').last.tr('[]','')
       end
 
       def unqualify_table_schema(table_name)
-        schema_name = table_name.to_s.split('.')[-2]
-        schema_name.nil? ? nil : remove_identifier_delimiters(schema_name)
+        table_name.to_s.split('.')[-2].gsub(/[\[\]]/,'') rescue nil
       end
 
       def unqualify_db_name(table_name)
         table_names = table_name.to_s.split('.')
-        table_names.length == 3 ? remove_identifier_delimiters(table_names.first) : nil
+        table_names.length == 3 ? table_names.first.tr('[]','') : nil
       end
 
       # private
