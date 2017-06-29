@@ -741,7 +741,7 @@ module ArJdbc
     def columns(table_name, name = nil, default = EMPTY_ARRAY)
       return [] if table_name.blank?
       column_definitions(table_name).collect do |ci|
-        sqlserver_options = ci.except(:name,:default_value,:type,:null).merge(:database_year=>database_year)
+        sqlserver_options = ci.except(:name,:default_value,:type,:null).merge(:database_year=>@database_year)
         jdbc_column_class.new ci[:name], ci[:default_value], ci[:type], ci[:null], sqlserver_options
       end
     end
