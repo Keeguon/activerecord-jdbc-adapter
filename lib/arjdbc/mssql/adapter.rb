@@ -310,7 +310,8 @@ module ArJdbc
     end
 
     def lowercase_schema_reflection_sql(node)
-      lowercase_schema_reflection ? "LOWER(#{node})" : node
+      #lowercase_schema_reflection ? "LOWER(#{node})" : node
+      node # fixit
     end
 
     # === SQLServer Specific (View Reflection) ====================== #
@@ -811,18 +812,37 @@ module ArJdbc
 
     # @override
     def exec_query(sql, name = 'SQL', binds = [])
-      # NOTE: we allow to execute SQL as requested returning a results.
-      # e.g. this allows to use SQLServer's EXEC with a result set ...
-      if sql.respond_to?(:to_sql)
-        sql = to_sql(sql, binds); to_sql = true
+      explaining = name == 'EXPLAIN'
+      names_and_types = []
+      params = []
+      binds.each_with_index do |(column,value),index|
+        ar_column = column.is_a?(ActiveRecord::ConnectionAdapters::Column)
+        next if ar_column && column.sql_type == 'timestamp'
+        v = value
+        names_and_types << if ar_column
+                             v = value.to_i if column.is_integer? && value.present?
+                             "@#{index} #{column.sql_type_for_statement}"
+                           elsif column.acts_like?(:string)
+                             "@#{index} nvarchar(max)"
+                           elsif column.is_a?(Fixnum)
+                             v = value.to_i
+                             "@#{index} int"
+                           else
+                             raise "Unknown bind columns. We can account for this."
+                           end
+        quoted_value = ar_column ? quote(v,column) : quote(v,nil)
+        params << (explaining ? quoted_value : "@#{index} = #{quoted_value}")
       end
-      sql = repair_special_columns(sql)
-      if prepared_statements?
-        log(sql, name, binds) { @connection.execute_query(sql, binds) }
+      if explaining
+        params.each_with_index do |param, index|
+          substitute_at_finder = /(@#{index})(?=(?:[^']|'[^']*')*$)/ # Finds unquoted @n values.
+          sql.sub! substitute_at_finder, param
+        end
       else
-        sql = suble_binds(sql, binds) unless to_sql # deprecated behavior
-        log(sql, name) { @connection.execute_query(sql) }
+        sql = "EXEC sp_executesql #{quote(sql)}"
+        sql << ", #{quote(names_and_types.join(', '))}, #{params.join(', ')}" unless binds.empty?
       end
+      log(sql,name,binds) { @connection.execute(sql) }
     end
 
     # @override
