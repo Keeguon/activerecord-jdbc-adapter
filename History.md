@@ -1,3 +1,25 @@
+## 1.3.25 (08/22/18)
+
+- [mysql] get rid of official driver < 5 checking on conn initialization 
+- [oracle] fix Oracle adapter not suing schema config properly (#869) 
+- [db2] refactor db2 quote (to avoid SQL injection) (#861) 
+- [db2] Fix a TypeError that happens when offset is used without limit (#873)
+- [mssql] automatically remove identity columns from AR generated UPDATE (#872)
+- [db2] Errors when dealing with blobs in jruby 9.2k (#902)
+
+## 1.3.24 (09/24/17)
+
+- [as400] Fixed ordering when limit and offset present (#789)
+- [postgres] limit driver version correctly since > 9.4.1206 might break
+- [db2] fixed issue with serialization not happening (#795)
+  resolves #725 (serialize with custom class not working on AR 4.2)
+- reconnect!/disconnect! shall call super to reset cache/transaction state
+- [oracle] some ~ enhanced adapter compatibility with configuration
+- [mysql] support setting collation: xxx with config[:encoding] like AR 4.2
+- [as400] Check if the exception thrown is a false-positive (#792)
+- [as400] Added truncate functionality for DB2/AS400 (#793)
+- [as400] Added DatabaseTasks for the as400 (#791)
+
 ## 1.3.23 (05/14/17)
 
 - specify gem 'activerecord' < 5 since 5.x is not supported in 1.3.x

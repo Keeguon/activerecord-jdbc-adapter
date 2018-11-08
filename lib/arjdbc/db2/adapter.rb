@@ -356,57 +356,49 @@ module ArJdbc
     # @param column (optional) contains info on the field
     # @override
     def quote(value, column = nil)
-      return value.quoted_id if value.respond_to?(:quoted_id)
       return value if sql_literal?(value)
 
-      if column
-        if column.respond_to?(:primary) && column.primary && column.klass != String
-          return value.to_i.to_s
-        end
-        if value && (column.type.to_sym == :decimal || column.type.to_sym == :integer)
-          return value.to_s
-        end
+      # Can anyone explain what this is for?
+      if column && column.respond_to?(:primary) && column.primary && column.klass != String
+        return value.to_i.to_s
       end
 
       column_type = column && column.type.to_sym
 
       case value
-      when nil then 'NULL'
-      when Numeric # IBM_DB doesn't accept quotes on numeric types
-        # if the column type is text or string, return the quote value
-        if column_type == :text || column_type == :string
-          "'#{value}'"
-        else
-          value.to_s
-        end
-      when String, ActiveSupport::Multibyte::Chars
-        if column_type == :binary && column.sql_type !~ /for bit data/i
-          if update_lob_value?(value, column)
-            value.nil? ? 'NULL' : BLOB_VALUE_MARKER # '@@@IBMBINARY@@@'"
+        when Numeric # IBM_DB doesn't accept quotes on numeric types
+          # if the column type is text or string, return the quote value
+          if column_type == :text || column_type == :string
+            "'#{value}'"
           else
-            "BLOB('#{quote_string(value)}')"
+            super
           end
-        elsif column && column.sql_type =~ /clob/ # :text
-          if update_lob_value?(value, column)
-            value.nil? ? 'NULL' : CLOB_VALUE_MARKER # "'@@@IBMTEXT@@@'"
+
+        when String, ActiveSupport::Multibyte::Chars
+          if column_type == :binary && column.sql_type !~ /for bit data/i
+            if update_lob_value?(value, column)
+              BLOB_VALUE_MARKER # '@@@IBMBINARY@@@'"
+            else
+              "BLOB('#{super}')"
+            end
+          elsif column && column.sql_type =~ /clob/ # :text
+            CLOB_VALUE_MARKER if update_lob_value?(value, column)# "'@@@IBMTEXT@@@'"
           else
-            "'#{quote_string(value)}'"
+            super
           end
-        elsif column_type == :xml
-          value.nil? ? 'NULL' : "'#{quote_string(value)}'" # "'<ibm>@@@IBMXML@@@</ibm>'"
-        else
-          "'#{quote_string(value)}'"
-        end
-      when Symbol then "'#{quote_string(value.to_s)}'"
-      when Time
-        # AS400 doesn't support date in time column
-        if column_type == :time
-          quote_time(value)
+
+        when Time
+          # AS400 doesn't support date in time column
+          if column_type == :time
+            quote_time(value)
+          else
+            super
+          end
+
         else
           super
-        end
-      else super
       end
+
     end
 
     # @override
@@ -492,29 +484,26 @@ module ArJdbc
 
     # @private shared with {Arel::Visitors::DB2}
     def replace_limit_offset!(sql, limit, offset, orders = nil)
-      limit = limit.to_i
+      # Ordering is done somewhere before this method gets called
 
-      if offset # && limit
-        over_order_by = nil # NOTE: orders matching got reverted as it was not complete and there were no case covering it ...
+      # Create the limit and offset sql
+      param_sql = ''
 
-        start_sql = "SELECT B.* FROM (SELECT A.*, row_number() OVER (#{over_order_by}) AS internal$rownum FROM (SELECT"
-        end_sql = ") A ) B WHERE B.internal$rownum > #{offset} AND B.internal$rownum <= #{limit + offset.to_i}"
-
-        if sql.is_a?(String)
-          sql.sub!(/SELECT/i, start_sql)
-          sql << end_sql
-        else # AR 4.2 sql.class ... Arel::Collectors::Bind
-          sql.parts[0] = start_sql # sql.sub! /SELECT/i
-          sql.parts[ sql.parts.length ] = end_sql
-        end
+      if offset.present? && limit.present?
+        param_sql << " LIMIT #{limit} OFFSET #{offset} "
       else
-        limit_sql = limit == 1 ? " FETCH FIRST ROW ONLY" : " FETCH FIRST #{limit} ROWS ONLY"
-        if sql.is_a?(String)
-          sql << limit_sql
-        else # AR 4.2 sql.class ... Arel::Collectors::Bind
-          sql.parts[ sql.parts.length ] = limit_sql
+        param_sql << " OFFSET #{offset}" if offset.present?
+        if limit.present?
+          param_sql << (limit == 1 ? ' FETCH FIRST ROW ONLY' : " FETCH FIRST #{limit} ROWS ONLY")
         end
       end
+
+      if sql.is_a?(String)
+        sql << param_sql
+      else # AR 4.2 sql.class ... Arel::Collectors::Bind
+        sql.parts[sql.parts.length] = param_sql
+      end
+
       sql
     end
 
