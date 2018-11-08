@@ -1,6 +1,6 @@
 module Arel
   module Visitors
-    class SQLServerNG < Arel::Visitors::ToSql
+    class SQLServerNG < MSSQL
 
       OFFSET = " OFFSET "
       ROWS = " ROWS"
