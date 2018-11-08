@@ -1,6 +1,6 @@
 module Arel
   module Visitors
-    class SQLServerNG < Arel::Visitors::ToSql
+    class SQLServerNG < const_defined?(:MSSQL) ? MSSQL : ToSql
 
       OFFSET = " OFFSET "
       ROWS = " ROWS"
@@ -12,6 +12,10 @@ module Arel
       private
 
       # SQLServer ToSql/Visitor (Overides)
+
+      def visit_Arel_Nodes_Top o, collector
+        collector
+      end
 
       def visit_Arel_Nodes_BindParam o, collector
         collector.add_bind(o) { |i| "@#{i-1}" }
